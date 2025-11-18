@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# This script monitors erroneous call rates over time and sends alerts if the rate exceeds a threshold.
+# It assumes the existence of a log file where call errors are recorded.
+
+LOG_FILE="/var/log/call_errors.log"
+THRESHOLD=5  # Threshold for erroneous call rate (in percentage)
+ALERT_EMAIL="admin@example.com"
+TIME_WINDOW=3600  # Time window in seconds (1 hour)
+
+# Function to calculate erroneous call rate
+calculate_error_rate() {
+    local total_calls=$(grep -c "Call completed" "$LOG_FILE")
+    local error_calls=$(grep -c "Call failed" "$LOG_FILE")
+
+    if [ "$total_calls" -eq 0 ]; then
+        echo 0
+    else
+        echo $((error_calls * 100 / total_calls))
+    fi
+}
+
+# Function to send alert email
+send_alert() {
+    local error_rate=$1
+    local subject="High Error Rate Alert: $error_rate%"
+    local body="The erroneous call rate has exceeded the threshold of $THRESHOLD%. Current rate: $error_rate%"
+
+    echo "$body" | mail -s "$subject" "$ALERT_EMAIL"
+}
+
+# Main monitoring loop
+while true; do
+    # Calculate error rate
+    error_rate=$(calculate_error_rate)
+
+    # Check if error rate exceeds threshold
+    if [ "$error_rate" -gt "$THRESHOLD" ]; then
+        send_alert "$error_rate"
+    fi
+
+    # Wait for the time window before checking again
+    sleep "$TIME_WINDOW"
+done
