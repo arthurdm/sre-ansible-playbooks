@@ -1,0 +1,25 @@
+- name: Check MySQL JDBC Connection Availability
+  hosts: all
+  become: no
+  gather_facts: no
+
+  tasks:
+    - name: Install required Python packages for MySQL connection
+      pip:
+        name:
+          - mysql-connector-python
+          - pymysql
+        state: present
+
+    - name: Test MySQL JDBC connection
+      community.mysql.mysql_query:
+        login_host: "{{ mysql_host }}"
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        query: "SELECT 1"
+      register: mysql_connection_test
+      ignore_errors: yes
+
+    - name: Display connection test result
+      debug:
+        msg: "MySQL JDBC connection is {{ 'successful' if mysql_connection_test is success else 'failed' }}"
